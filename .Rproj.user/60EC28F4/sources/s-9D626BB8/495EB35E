@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1586520892335.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "495EB35E",
+    "lastKnownWriteTime" : 1586521006,
+    "last_content_update" : 1586521006963,
+    "path" : "P:/R/AttractionRepulsionClustering/R/additive2Distance.R",
+    "project_path" : "R/additive2Distance.R",
+    "properties" : {
+        "cursorPosition" : "15,86",
+        "scrollLine" : "1"
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

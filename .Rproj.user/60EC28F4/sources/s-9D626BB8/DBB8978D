@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1586521506084.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "316440890",
+    "id" : "DBB8978D",
+    "lastKnownWriteTime" : 1586517916,
+    "last_content_update" : 1586517916,
+    "path" : "P:/R/AttractionRepulsionClustering/R/e2DistProp.R",
+    "project_path" : "R/e2DistProp.R",
+    "properties" : {
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

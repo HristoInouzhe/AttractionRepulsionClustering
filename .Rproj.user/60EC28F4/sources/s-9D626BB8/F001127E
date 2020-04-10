@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1586521127397.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F001127E",
+    "lastKnownWriteTime" : 1586521444,
+    "last_content_update" : 1586521444028,
+    "path" : "P:/R/AttractionRepulsionClustering/R/localDistance.R",
+    "project_path" : "R/localDistance.R",
+    "properties" : {
+        "cursorPosition" : "6,0",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 9,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

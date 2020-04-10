@@ -1,0 +1,1472 @@
+X2 = rbind(rmvnorm(50, mean = c(-1,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(-1,-0.5), sigma = diag(0.25,2)),
+          rmvnorm(50, mean = c(1,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(1,-0.5), sigma = diag(0.25,2)))
+Q2 = cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
+Q22 = c(rep(-1,100), rep(1,100))
+
+# plot(X2[1:100,], pch = "H",xlim = c(-3,3), ylim = c(-3,3))
+# points(X2[101:200,], pch = "M")
+
+datos_originales = data.frame(xvar = X2[,1], yvar = X2[,2], A = t(Q2)[,1], B = t(Q2)[,2], grupo_mod = Q22 , grupo_ch = c(rep("A", 100),rep("B",100)))
+
+ggplot(datos_originales, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 7)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt))  + theme(legend.position="none") + labs(x = "", y = "")
+
+X_QQ = cbind(X2, t(Q2))
+
+##############################################################################
+####### Aditivo 1 solo repulsion, clases codificadas como (0,1) y (1,0)#######
+##############################################################################
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0.1,0,0,0.1),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+# pr = lapply(1:dim(X_QQ)[1], function(i){apply(X_QQ, 1, delta_mult_2(U = matrix(c(1,-1,-1,1), ncol = 2), a = 0.9, b = 2, d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf = matrix(c(0.1,0,0,0.1), ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = X2[,1], yvar = X2[,2], grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot2::ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ ggplot2::geom_point(size = 3)+ ggplot2::theme_bw() +
+  ggplot2::scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + ggplot2::labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = X2[,1], yvar = X2[,2], grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                    method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+##########
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(1,0,0,1),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf = matrix(c(1,0,0,1), ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+
+##########
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(10,0,0,10),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf = matrix(c(10,0,0,10), ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+
+#######
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(100,0,0,100),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+# dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf = matrix(c(100,0,0,100), ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+##############################################################################
+####### Aditivo 1 solo repulsion, clases codificadas como -1 y 1#######
+##############################################################################
+
+X_QQQ = cbind(X2, Q22)
+
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_add_1(U = 0.1, S = 0, d = 3, dq = 1), y = X_QQQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, t(Q22), Qf = 0.1, tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+##########
+
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_add_1(U = 1, S = 0, d = 3, dq = 1), y = X_QQQ[i,])})
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_add_2(u = 1, d = 3, dq = 1), y = X_QQQ[i,])})
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_mult(a = 2, b = 20, d = 3, dq = 1), y = X_QQQ[i,])})
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_mult_2(U = 1, a = 0.99, b = 20, d = 3, dq = 1), y = X_QQQ[i,])})
+
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi), k = 2)
+# # mds_prueba = cmdscale(as.dist(dis_addi), k = 3)
+# mds_prueba = isoMDS(dis_addi,k = 3)
+# # plot3d(mds_prueba$points, col = pr_km_trans_3$cluster)
+# pairs(mds_prueba$points, col = datos_originales$grupo_mod + 2)
+# plot3d(mds_prueba$points[,2:4], col = datos_originales$grupo_mod + 2)
+# pairs(mds_prueba$points, col = pr_km_trans_4$cluster)
+# plot(X2,col = pr_km_trans_8$cluster)
+
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 7)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( x = "", y = "") + theme(legend.position="none") 
+
+vec_bias = array(dim = c(1,9))
+ss = 0
+for(k in 2:4){
+  pr_km_trans_2 = kmeans(mds_prueba$points, centers = k, iter.max = 40, nstart = 30)
+  for(j in 1:k){
+    ss = ss + 1
+    ss_bias = sum(pr_km_trans_2$cluster == j & datos$grupo_ch == "A")/sum(pr_km_trans_2$cluster == j)
+    vec_bias[ss] = ss_bias
+  }
+}
+
+vec_bias = array(dim = c(1,9))
+ss = 0
+for(k in 2:4){
+  pr_km_trans_2 = kmeans(cbind(datos_originales$xvar,datos_originales$yvar), centers = k, iter.max = 40, nstart = 30)
+  for(j in 1:k){
+    ss = ss + 1
+    ss_bias = sum(pr_km_trans_2$cluster == j & datos_originales$grupo_ch == "A")/sum(pr_km_trans_2$cluster == j)
+    vec_bias[ss] = ss_bias
+  }
+}
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+pr_km_trans_8 = kmeans(mds_prueba$points, centers = 8, iter.max = 40, nstart = 30)
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+vec_bias = array(dim = c(1,9))
+ss = 0
+for(k in 2:4){
+  pr_km_trans_2 = cutree(qhcl, k)
+  for(j in 1:k){
+    ss = ss + 1
+    ss_bias = sum(pr_km_trans_2 == j & datos$grupo_ch == "A")/sum(pr_km_trans_2 == j)
+    vec_bias[ss] = ss_bias
+  }
+}
+
+qhcl = hclust(dist(cbind(datos_originales$xvar, datos_originales$yvar)), method = "complete")
+plot(qhcl)
+
+vec_bias = array(dim = c(1,9))
+ss = 0
+for(k in 2:4){
+  pr_km_trans_2 = cutree(qhcl, k)
+  for(j in 1:k){
+    ss = ss + 1
+    ss_bias = sum(pr_km_trans_2 == j & datos$grupo_ch == "A")/sum(pr_km_trans_2 == j)
+    vec_bias[ss] = ss_bias
+  }
+}
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, t(Q22), Qf = 1, tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+##########
+
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_add_1(U = 10, S = 0, d = 3, dq = 1), y = X_QQQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, t(Q22), Qf = 10, tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+#######
+
+pr = lapply(1:200, function(i){apply(X_QQQ, 1, delta_add_1(U = 100, S = 0, d = 3, dq = 1), y = X_QQQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, t(Q22), Qf = 100, tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+##############################################################################
+####### Aditivo 1 solo atraccion, clases codificadas como (0,1) y (1,0)#######
+##############################################################################
+
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0,-0.1,-0.1,0),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf =  matrix(c(0,-0.1,-0.1,0),ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+####
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0,-2,-2,0),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf =  matrix(c(0,-1,-1,0),ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+
+#####
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0,-10,-10,0),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf =  matrix(c(0,-10,-10,0),ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+
+####
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0,-100,-100,0),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+if(min(dis_addi)<0){
+  dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+}
+mds_prueba = isoMDS(as.dist(dis_addi),k = 3)
+# plot3d(mds_prueba$points, col = datos_originales$grupo_mod + 2)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data", x = "", y = "")
+
+pr_km_trans_2 = kmeans(mds_prueba$points, centers = 2, iter.max = 40, nstart = 30)
+datos2 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_2$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 2-means", x = "", y = "")
+
+pr_km_trans_3 = kmeans(mds_prueba$points, centers = 3, iter.max = 40, nstart = 30)
+datos3 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_3$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 3-means", x = "", y = "")
+
+pr_km_trans_4 = kmeans(mds_prueba$points, centers = 4, iter.max = 40, nstart = 30)
+datos4 = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans_4$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Transformed Data, 4-means", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "single")
+
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Single-Linkage", x = "", y = "")
+
+##
+
+qhcl = hclust(as.dist(dis_addi), method = "complete")
+plot(qhcl)
+
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,2)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,3)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(qhcl,4)), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Complete-Linkage", x = "", y = "")
+
+##
+
+qhcl = chargedHclust(X2, Q2, Qf =  matrix(c(0,-100,-100,0),ncol = 2), tipo = "centroid", tipoq = "additive")
+
+vec = array(dim = c(dim(X2)[1], 1))
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-2]][2], ",")))
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+datos2 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos2, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-3]][3], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+datos3 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos3, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+g1 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][1], ",")))
+g2 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][2], ",")))
+g3 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][3], ",")))
+g4 = as.integer(unlist(strsplit(qhcl$clusters[[dim(X2)[1]-4]][4], ",")))
+
+vec[g1] = rep(1, length(g1))
+vec[g2] = rep(2, length(g2))
+vec[g3] = rep(3, length(g3))
+vec[g4] = rep(4, length(g4))
+
+datos4 = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(vec), 
+                    grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos4, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+datos_compar = data.frame(xvar = datos_originales$xvar, yvar = datos_originales$yvar, grupo = as.factor(cutree(hclust(dist(mds_prueba$points), 
+                                                                                                                      method = "centroid"), 4)), grupo_ch = c(rep("A",100),rep("B",100)))
+ggplot(datos_compar, aes(x = xvar, y = yvar, color = grupo, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Original Data, Centroid-Method", x = "", y = "")
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+
+#####################################################################################
+####### Aditivo 1 atraccion y repulsion, clases codificadas como (0,1) y (1,0)#######
+#####################################################################################
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(0.1,-0.1,-0.1,0.1),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(1,-1,-1,1),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(10,-10,-10,10),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+
+pr = lapply(1:200, function(i){apply(X_QQ, 1, delta_add_1(U = matrix(c(100,-100,-100,100),ncol = 2), S = zeros(2,2), d = 4, dq = 2), y = X_QQ[i,])})
+dis_addi = matrix(unlist(pr),ncol = 200, nrow = 200, byrow = T)
+dis_addi = dis_addi + abs(min(dis_addi))+10^-20
+mds_prueba = isoMDS(as.dist(dis_addi),k = 2)
+# pr_km_trans = kmeans(mds_prueba$points, centers = 4, iter.max = 30, nstart = 20)
+datos = data.frame(xvar = mds_prueba$points[,1], yvar = mds_prueba$points[,2], grupo = as.factor(pr_km_trans$cluster), grupo_ch = c(rep("A",100),rep("B",100)))
+
+ggplot(datos, aes(x = xvar, y = yvar, color = grupo_ch, shape = grupo_ch))+ geom_point(size = 3)+ theme_bw() +
+  scale_shape_manual(values = apply(t(c("A","B")),2,utf8ToInt)) + labs( title = "Datos transformados", x = "", y = "")
+

@@ -1,0 +1,522 @@
+require(optimbase)
+require(mvtnorm)
+require(ggraph)
+require(igraph)
+require(tidyverse)
+require(rgl)
+require(tclust)
+
+chargedDistance = function(i, Q, Qf){
+  E = colSums((Qf*Q[,i])%*%Q)
+}
+
+ud_single = function(i, l_d){
+  min(l_d[1, i], l_d[2, i])
+}
+ud_complete = function(i, l_d){
+  max(l_d[1, i], l_d[2, i])
+}
+ud_average = function(i, l_d, l_i, l_j){
+  (l_i/(l_i + l_j))*l_d[1, i] + (l_j/(l_i + l_j))*l_d[2, i]
+}
+ud_mcquitty = function(i,l_d){
+  (0.5*l_d[1, i] + 0.5*l_d[2, i])^(1/2)
+}
+ud_median = function(i, l_d, dij){
+  (l_d[1, i]/2 + l_d[2, i]/2 - dij/4)^(1/2)
+}
+ud_centroid = function(i, l_d, l_i, l_j, dij){
+  ((l_i/(l_i + l_j))*l_d[1, i] + (l_j/(l_i + l_j))*l_d[2, i]  - (l_i*l_j/(l_i + l_j)^2)*dij)^(1/2)
+}
+ud_charge = function(i,l_q){
+  l_q[1,i] + l_q[2,i]
+}
+
+
+chargedHclust = function(X, Q, Qf, a = 0, b = 1, tipo = "single", tipoq = "additive"){
+  if( tipoq == "additive"){
+    DX = as.matrix(dist(X, method = "euclidean"))
+    diag(DX) = rep(Inf,dim(DX)[1])
+    DQ = as.matrix(as.dist(vapply(1:dim(Q)[2], chargedDistance, Q = Q,
+                                  Qf = Qf, FUN.VALUE = as.double((1:dim(Q)[2])))))
+    diag(DQ) = rep(Inf,dim(DQ)[1])
+    
+    lvl = list()
+    j = 0
+    clustering = list()
+    edges_pr = data.frame()
+    cnames = colnames(DX)
+    DS = DX + DQ
+    while (dim(DX)[1]>3) {
+      j = j + 1
+      unir = sort(arrayInd(which.min(as.matrix(DS)), dim(as.matrix(DS))))
+      nme2 = paste(cnames[unir[1]], cnames[unir[2]], sep = ",")
+      c_i = unlist(strsplit(cnames[unir[1]], ","))
+      c_j = unlist(strsplit(cnames[unir[2]], ","))
+      l_i = length(c_i)
+      l_j = length(c_j)
+      lvl[[j]] = list(nivel = j, cluster = c(c_i, c_j))
+      nme = paste("c",j,sep = "")
+      edges_pr = rbind(data.frame(A = c(nme, nme), B =c(colnames(DX)[unir[1]], 
+                                                        colnames(DX)[unir[2]])),edges_pr)
+      l_dx = DX[unir,]; #l_dq = DQ[unir,]
+      dij = DX[unir[1],unir[2]]
+      DX = DX[-unir,]; DX = DX[,-unir]; #DQ = DQ[-unir,]; DQ = DQ[,-unir];
+      l_ds = DS[unir,]
+      DS = DS[-unir,];DS = DS[, -unir]
+      # dnew_x = array(dim = c(dim(DX)[1]+1))
+      # dnew_q = array(dim = c(dim(DX)[1]+1))
+      if (tipo == "single"){
+        # dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_single, FUN.VALUE = 1.1,l_d = l_dx)
+        new_s = vapply((1:(dim(DS)[1] + 2))[-unir], ud_single, FUN.VALUE = 1.1,l_d = l_dS)
+      } else{
+        if (tipo == "complete"){
+          # dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_dx)
+          dnew_s = vapply((1:(dim(DS)[1] + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_ds)
+        } else {
+          if (tipo == "average"){
+            # dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_average, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j)
+            dnew_s = vapply((1:(dim(DS)[1] + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_ds)
+          } else {
+            if (tipo == "mcquitty"){
+              dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dx)
+            } else{
+              if (tipo == "median"){
+                dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dx, dij = dij)
+              } else{
+                if (tipo == "centroid"){
+                  dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j, dij = dij)
+                  dnew_s = vapply((1:(dim(DS)[1] + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_ds, l_i = l_i, l_j = l_j, dij = dij)
+                }
+                else{
+                  stop("Not recognizable method")
+                }
+              }
+              
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+      
+      # dnew_q = vapply((1:(dim(DX)[1] + 2))[-unir], ud_charge, FUN.VALUE = 1.1, l_q = l_dq)
+      # dnew_x = dnew_x[-which(is.na(dnew_x) == 1)]
+      # dnew_q = dnew_q[-which(is.na(dnew_q) == 1)]
+      DX = cbind(rbind(DX, t(dnew_x)),c(dnew_x, Inf))
+      colnames(DX) = c(colnames(DX)[-dim(DX)[1]], nme)
+      DS = cbind(rbind(DS, t(dnew_s)),c(dnew_s, Inf))
+      colnames(DS) = c(colnames(DS)[-dim(DS)[1]], nme)
+      # DQ = cbind(rbind(DQ, t(dnew_q)),c(dnew_q, Inf))
+      # colnames(DQ) = c(colnames(DQ)[-dim(DQ)[1]], nme)
+      cnames = c(cnames[-unir], nme2)
+      clustering[[j]] = cnames
+    }
+    j = j + 1
+    # DS = DX + DQ
+    unir = sort(arrayInd(which.min(as.matrix(DS)), dim(as.matrix(DS))))
+    lvl[[j]] = list(nivel = j, cluster = c(unlist(strsplit(colnames(DX)[unir[1]], ",")), 
+                                           unlist(strsplit(colnames(DX)[unir[2]], ","))))
+    nme2 = paste(cnames[unir[1]], cnames[unir[2]], sep = ",")
+    c_i = unlist(strsplit(cnames[unir[1]], ","))
+    c_j = unlist(strsplit(cnames[unir[2]], ","))
+    l_i = length(c_i)
+    l_j = length(c_j)
+    lvl[[j]] = list(nivel = j, cluster = c(c_i, c_j))
+    nme = paste("c",j,sep = "")
+    edges_pr = rbind(data.frame(A = c(nme, nme),B = c(colnames(DX)[unir[1]], 
+                                                      colnames(DX)[unir[2]])),edges_pr)
+    l_dx = DX[unir,]; l_ds = DS[unir,]#l_dq = DQ[unir,]
+    dij = DX[unir[1],unir[2]]
+    DX = DX[-unir,]; DX = t(DX)[,-unir]; #DQ = DQ[-unir,]; DQ = t(DQ)[,-unir];
+    DS = DS[-unir,];DS = t(DS)[, -unir]
+    
+    if (tipo == "single"){
+      dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_single, FUN.VALUE = 1.1,l_d = l_dx)
+    } else{
+      if (tipo == "complete"){
+        dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_dx)
+      } else {
+        if (tipo == "average"){
+          dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_average, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j)
+        } else {
+          if (tipo == "mcquitty"){
+            dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dx)
+          } else{
+            if (tipo == "median"){
+              dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dx, dij = dij)
+            } else{
+              if (tipo == "centroid"){
+                dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j, dij = dij)
+                dnew_s = vapply((1:(length(DS)[1] + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_ds, l_i = l_i, l_j = l_j, dij = dij)
+              }
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    
+    # dnew_q = vapply((1:(length(DX) + 2))[-unir], ud_charge, FUN.VALUE = 1.1, l_q = l_dq)
+    
+    
+    # dnew_x = dnew_x[-which(is.na(dnew_x) == 1)]
+    # dnew_q = dnew_q[-which(is.na(dnew_q) == 1)]
+    DX = cbind(rbind(DX, t(dnew_x)),c(dnew_x, Inf))
+    colnames(DX) = c(colnames(DX)[-dim(DX)[1]], nme)
+    DS = cbind(rbind(DS, t(dnew_s)),c(dnew_s, Inf))
+    colnames(DS) = c(colnames(DS)[-dim(DS)[1]], nme)
+    # DQ = cbind(rbind(DQ, t(dnew_q)),c(dnew_q, Inf))
+    # colnames(DQ) = c(colnames(DQ)[-dim(DQ)[1]], nme)
+    cnames = c(cnames[-unir], nme2)
+    clustering[[j]] = cnames
+    nme = paste("c",j + 1,sep = "")
+    edges_pr = rbind(data.frame(A = c(nme, nme), B = c(colnames(DX)[1], 
+                                                       colnames(DX)[2])),edges_pr)
+  } else{
+    if (tipoq == "multiplicative"){
+      DX = as.matrix(dist(X, method = "euclidean"))
+      diag(DX) = rep(Inf,dim(DX)[1])
+      # DQ = as.matrix(as.dist(vapply(1:dim(Q)[2], chargedDistance, Q = Q,
+      #                               Qf = Qf, FUN.VALUE = as.double((1:dim(Q)[2])))))
+      DQ = as.matrix(dist(t(Q)))
+      
+      diag(DQ) = rep(Inf,dim(DQ)[1])
+      DS = (matrix(1, nrow = dim(DQ)[1], ncol = dim(DQ)[2]) + a*exp(-b*DQ))*DX 
+      
+      lvl = list()
+      j = 0
+      clustering = list()
+      edges_pr = data.frame()
+      cnames = colnames(DX)
+      while (dim(DX)[1]>3) {
+        j = j + 1
+        # DS = (ones(dim(DQ)[1],dim(DQ)[2]) + a*sign(DQ)*e^(-b*DQ))*DX # hay que hacer todos los cambios adecuados
+        
+        unir = sort(arrayInd(which.min(as.matrix(DS)), dim(as.matrix(DS))))
+        nme2 = paste(cnames[unir[1]], cnames[unir[2]], sep = ",")
+        c_i = unlist(strsplit(cnames[unir[1]], ","))
+        c_j = unlist(strsplit(cnames[unir[2]], ","))
+        l_i = length(c_i)
+        l_j = length(c_j)
+        lvl[[j]] = list(nivel = j, cluster = c(c_i, c_j))
+        nme = paste("c",j,sep = "")
+        edges_pr = rbind(data.frame(A = c(nme, nme), B =c(colnames(DX)[unir[1]], 
+                                                          colnames(DX)[unir[2]])),edges_pr)
+        l_dx = DX[unir,]; l_dq = DQ[unir,]
+        dij = DX[unir[1],unir[2]]
+        dij_q = DQ[unir[1],unir[2]]
+        DX = DX[-unir,]; DX = DX[,-unir]; DQ = DQ[-unir,]; DQ = DQ[,-unir];
+        # l_ds = DS[unir,]
+        DS = DS[-unir,];DS = DS[, -unir]
+        # dnew_x = array(dim = c(dim(DX)[1]+1))
+        # dnew_q = array(dim = c(dim(DX)[1]+1))
+        if (tipo == "single"){
+          dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_single, FUN.VALUE = 1.1,l_d = l_dx)
+        } else{
+          if (tipo == "complete"){
+            dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_dx)
+          } else {
+            if (tipo == "average"){
+              dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_average, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j)
+            } else {
+              if (tipo == "mcquitty"){
+                dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dx)
+                dnew_q = vapply((1:(dim(DQ)[1] + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dq)
+                dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+              } else{
+                if (tipo == "median"){
+                  dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dx, dij = dij)
+                  dnew_q = vapply((1:(dim(DQ)[1] + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dq, dij = dij_q)
+                  if(sum(is.na(dnew_q))>0){
+                    print(j)
+                    print((dim(DQ)[1] + 2))
+                    print(unir)
+                    print(dij_q)
+                    print(l_dq)
+                  }
+                  dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+                } else{
+                  if (tipo == "centroid"){
+                    dnew_x = vapply((1:(dim(DX)[1] + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j, dij = dij)
+                    dnew_q = vapply((1:(dim(DQ)[1] + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dq, l_i = l_i, l_j = l_j, dij = dij_q)
+                    dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+                  }
+                  else{
+                    stop("Not recognizable method")
+                  }
+                }
+                
+              }
+              
+            }
+            
+          }
+          
+        }
+        
+        
+        # dnew_q = vapply((1:(dim(DX)[1] + 2))[-unir], ud_charge, FUN.VALUE = 1.1, l_q = l_dq)
+        # dnew_x = dnew_x[-which(is.na(dnew_x) == 1)]
+        # dnew_q = dnew_q[-which(is.na(dnew_q) == 1)]
+        DX = cbind(rbind(DX, t(dnew_x)),c(dnew_x, Inf))
+        colnames(DX) = c(colnames(DX)[-dim(DX)[1]], nme)
+        DQ = cbind(rbind(DQ, t(dnew_q)),c(dnew_q, Inf))
+        colnames(DQ) = c(colnames(DQ)[-dim(DQ)[1]], nme)
+        DS = cbind(rbind(DS, t(dnew_s)),c(dnew_s, Inf))
+        colnames(DS) = c(colnames(DS)[-dim(DS)[1]], nme)
+        cnames = c(cnames[-unir], nme2)
+        clustering[[j]] = cnames
+      }
+      j = j + 1
+      # DS = (ones(dim(DQ)[1], dim(DQ)[2]) + a*sign(DQ)*b^(-1/abs(DQ)))*DX
+      unir = sort(arrayInd(which.min(as.matrix(DS)), dim(as.matrix(DS))))
+      lvl[[j]] = list(nivel = j, cluster = c(unlist(strsplit(colnames(DX)[unir[1]], ",")), 
+                                             unlist(strsplit(colnames(DX)[unir[2]], ","))))
+      nme2 = paste(cnames[unir[1]], cnames[unir[2]], sep = ",")
+      c_i = unlist(strsplit(cnames[unir[1]], ","))
+      c_j = unlist(strsplit(cnames[unir[2]], ","))
+      l_i = length(c_i)
+      l_j = length(c_j)
+      lvl[[j]] = list(nivel = j, cluster = c(c_i, c_j))
+      nme = paste("c",j,sep = "")
+      edges_pr = rbind(data.frame(A = c(nme, nme),B = c(colnames(DX)[unir[1]], 
+                                                        colnames(DX)[unir[2]])),edges_pr)
+      l_dx = DX[unir,]; l_dq = DQ[unir,]
+      dij = DX[unir[1],unir[2]]
+      dij_q = DQ[unir[1],unir[2]]
+      DX = DX[-unir,]; DX = t(DX)[,-unir]; DQ = DQ[-unir,]; DQ = t(DQ)[,-unir];
+      # l_ds = DS[unir,]
+      DS = DS[-unir,];DS = t(DS)[, -unir]
+      
+      if (tipo == "single"){
+        dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_single, FUN.VALUE = 1.1,l_d = l_dx)
+      } else{
+        if (tipo == "complete"){
+          dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_complete, FUN.VALUE = 1.1,l_d = l_dx)
+        } else {
+          if (tipo == "average"){
+            dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_average, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j)
+          } else {
+            if (tipo == "mcquitty"){
+              dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dx)
+              dnew_q = vapply((1:(length(DQ) + 2))[-unir], ud_mcquitty, FUN.VALUE = 1.1,l_d = l_dq)
+              dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+            } else{
+              if (tipo == "median"){
+                dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dx, dij = dij)
+                dnew_q = vapply((1:(length(DQ) + 2))[-unir], ud_median, FUN.VALUE = 1.1,l_d = l_dq, dij = dij_q)
+                dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+              } else{
+                if (tipo == "centroid"){
+                  dnew_x = vapply((1:(length(DX) + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dx, l_i = l_i, l_j = l_j, dij = dij)
+                  dnew_q = vapply((1:(length(DQ) + 2))[-unir], ud_centroid, FUN.VALUE = 1.1,l_d = l_dq, l_i = l_i, l_j = l_j, dij = dij_q)
+                  dnew_s =  (matrix(1, nrow = length(dnew_x), ncol = 1) + a*exp(-b*dnew_q))*dnew_x
+                }
+              }
+              
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+      
+      # dnew_q = vapply((1:(length(DX) + 2))[-unir], ud_charge, FUN.VALUE = 1.1, l_q = l_dq)
+      
+      
+      # dnew_x = dnew_x[-which(is.na(dnew_x) == 1)]
+      # dnew_q = dnew_q[-which(is.na(dnew_q) == 1)]
+      DX = cbind(rbind(DX, t(dnew_x)),c(dnew_x, Inf))
+      colnames(DX) = c(colnames(DX)[-dim(DX)[1]], nme)
+      DQ = cbind(rbind(DQ, t(dnew_q)),c(dnew_q, Inf))
+      colnames(DQ) = c(colnames(DQ)[-dim(DQ)[1]], nme)
+      DS = cbind(rbind(DS, t(dnew_s)),c(dnew_s, Inf))
+      colnames(DS) = c(colnames(DS)[-dim(DS)[1]], nme)
+      cnames = c(cnames[-unir], nme2)
+      clustering[[j]] = cnames
+      nme = paste("c",j + 1,sep = "")
+      edges_pr = rbind(data.frame(A = c(nme, nme), B = c(colnames(DX)[1], 
+                                                         colnames(DX)[2])),edges_pr)
+      
+    }else{
+      stop("Error: Not a recognizable charge penalty")
+    }
+  }
+  
+  
+  return(list(niveles = lvl, clusters = clustering, edges = edges_pr))
+}
+chargedHclust_2 = function(X, Q, Qf, tipo = "complete"){
+  DX = as.matrix(dist(X, method = "euclidean"))
+  diag(DX) = rep(Inf,dim(DX)[1])
+  DQ = as.matrix(as.dist(vapply(1:dim(Q)[2], chargedDistance, Q = Q,
+                                Qf = Qf, FUN.VALUE = as.double((1:dim(Q)[2])))))
+  diag(DQ) = rep(Inf,dim(DQ)[1])
+  DS = DX + DQ
+  return(hclust(as.dist(DS), method = tipo))
+}
+# X = rbind(rmvnorm(10, mean = c(-1,0.5), sigma = diag(0.25,2)), rmvnorm(10, mean = c(-1,-0.5), sigma = diag(0.25,2)),
+#           rmvnorm(10, mean = c(1,0.5), sigma = diag(0.25,2)), rmvnorm(10, mean = c(1,-0.5), sigma = diag(0.25,2)))
+# Q = cbind(matrix(rep(c(0, 1), 20), nrow = 2), matrix(rep(c(1, 0), 20), nrow = 2))
+# Qf = U
+# plot(X[1:20,], pch = "H",xlim = c(-3,3), ylim = c(-3,3))
+# points(X[21:40,], pch = "M")
+# 
+# U = -ones(2,2)
+# diag(U) = c(1,1)
+# 
+# U2 = matrix(c(0,0.75,0.75,0),ncol = 2)
+# diag(U2) = c(1,1)
+# 
+# U3 = matrix(c(0,0.25,0.25,0),ncol = 2)
+# diag(U3) = c(0.25,0.25)
+# 
+# U4 = -matrix(c(0,0.75,0.75,0),ncol = 2)
+# diag(U4) = c(1,1)
+# 
+# U5 = -matrix(c(0,0.25,0.25,0),ncol = 2)
+# diag(U5) = c(0.25,0.25)
+# 
+# U6 = -matrix(c(0,0.25,0.25,0),ncol = 2)
+# diag(U6) = c(1,1)
+
+# X2 = rbind(rmvnorm(50, mean = c(-1,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(-1,-0.5), sigma = diag(0.25,2)),
+#           rmvnorm(50, mean = c(1,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(1,-0.5), sigma = diag(0.25,2)))
+# Q2 = cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
+# plot(X2[1:100,], pch = "H",xlim = c(-3,3), ylim = c(-3,3))
+# points(X2[101:200,], pch = "M")
+# 
+# X3 = rbind(rmvnorm(50, mean = c(-5,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(-5,-0.5), sigma = diag(0.25,2)),
+#            rmvnorm(50, mean = c(5,0.5), sigma = diag(0.25,2)), rmvnorm(50, mean = c(5,-0.5), sigma = diag(0.25,2)))
+# Q3 = cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
+# plot(X3[1:100,], pch = "H",xlim = c(-10,10), ylim = c(-3,3))
+# points(X3[101:200,], pch = "M")
+# # 
+# # 
+# # prueba_single_U = chargedHclust(X, Q, U, tipo = "single")
+# # prueba_complete_U = chargedHclust(X, Q, U, tipo = "complete")
+# # prueba_average_U = chargedHclust(X, Q, U, tipo = "average")
+# # prueba_centroid_U = chargedHclust(X, Q, U, tipo = "centroid")
+# # 
+# prueba_single_U_2 = chargedHclust(X2, Q2, U, tipo = "single")
+# prueba_complete_U_2 = chargedHclust(X2, Q2, U, tipo = "complete")
+# prueba_average_U_2 = chargedHclust(X2, Q2, U, tipo = "average")
+# prueba_centroid_U_2 = chargedHclust(X2, Q2, U, tipo = "centroid")
+# 
+# prueba_single_U_3 = chargedHclust(X3, Q3, U, tipo = "single")
+# prueba_complete_U_3 = chargedHclust(X3, Q3, U, tipo = "complete")
+# prueba_average_U_3 = chargedHclust(X3, Q3, U, tipo = "average")
+# prueba_centroid_U_3 = chargedHclust(X3, Q3, U, tipo = "centroid")
+# 
+# # 
+# # prueba_single_U2 = chargedHclust(X, Q, U2, tipo = "single")
+# # prueba_complete_U2 = chargedHclust(X, Q, U2, tipo = "complete")
+# # prueba_average_U2 = chargedHclust(X, Q, U2, tipo = "average")
+# # prueba_centroid_U2 = chargedHclust(X, Q, U2, tipo = "centroid")
+# # 
+# # prueba_single_U3 = chargedHclust(X, Q, U3, tipo = "single")
+# # prueba_complete_U3 = chargedHclust(X, Q, U3, tipo = "complete")
+# # prueba_average_U3 = chargedHclust(X, Q, U3, tipo = "average")
+# # prueba_centroid_U3 = chargedHclust(X, Q, U3, tipo = "centroid")
+# # 
+# # prueba_single_U4 = chargedHclust(X, Q, U4, tipo = "single")
+# # prueba_complete_U4 = chargedHclust(X, Q, U4, tipo = "complete")
+# # prueba_average_U4 = chargedHclust(X, Q, U4, tipo = "average")
+# # prueba_centroid_U4 = chargedHclust(X, Q, U4, tipo = "centroid")
+# # 
+# # prueba_single_U5 = chargedHclust(X, Q, U5, tipo = "single")
+# # prueba_complete_U5 = chargedHclust(X, Q, U5, tipo = "complete")
+# # prueba_average_U5 = chargedHclust(X, Q, U5, tipo = "average")
+# # prueba_centroid_U5 = chargedHclust(X, Q, U5, tipo = "centroid")
+# # 
+# # prueba_single_U6 = chargedHclust(X, Q, U6, tipo = "single")
+# # prueba_complete_U6 = chargedHclust(X, Q, U6, tipo = "complete")
+# # prueba_average_U6 = chargedHclust(X, Q, U6, tipo = "average")
+# # prueba_centroid_U6 = chargedHclust(X, Q, U6, tipo = "centroid")
+# # 
+# # 
+# mygraph_single_U <- graph_from_data_frame(cosa_mult$edges, directed = T)
+# ggraph(graph_from_data_frame(cosa_mult$edges), layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#           geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Single U")
+# ggraph(graph_from_data_frame(cosa_mult$edges), layout = 'dendrogram', circular = FALSE) + geom_edge_elbow2() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Single U")
+# # 
+# # mygraph_single_U3 <- graph_from_data_frame(prueba_single_U3$edges)
+# # ggraph(mygraph_single_U3, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+# #   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+# #   ylim(-.4, NA) + ggtitle("Single U3")
+# # 
+mygraph_single_U6 <- igraph::graph_from_data_frame(qhcl$edges)
+ggraph::ggraph(mygraph_single_U6, layout = 'dendrogram', circular = FALSE) + ggraph::geom_edge_diagonal() +
+  ggraph::geom_node_point() + ggplot2::theme_void() +ggraph::geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+  ggplot2::ylim(-.4, NA) + ggplot2::ggtitle("Single U6")
+# # 
+# # mygraph_complete_U <- graph_from_data_frame(prueba_complete_U$edges)
+# # ggraph(mygraph_complete_U , layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+# #   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+# #   ylim(-.4, NA) + ggtitle("Complete U")
+# # 
+# # mygraph_complete_U3 <- graph_from_data_frame(prueba_complete_U3$edges)
+# # ggraph(mygraph_complete_U3 , layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+# #   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+# #   ylim(-.4, NA) + ggtitle("Complete U3")
+# # 
+# # mygraph_complete_U6  <- graph_from_data_frame(prueba_complete_U6$edges)
+# # ggraph(mygraph_complete_U6, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+# #   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+# #   ylim(-.4, NA) + ggtitle("Complete U6")
+# # # ggraph(mygraph_complete_U6, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+# # #   geom_node_point() + theme_void() + geom_node_text(aes( label=name) , angle=90 , hjust=1, nudge_y = -0.15) +
+# # #   ylim(-.4, NA) + ggtitle("Complete U6")
+# # 
+# # 
+# mygraph_single_U_2 <- graph_from_data_frame(prueba_single_U_2$edges)
+# ggraph(mygraph_single_U_2, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Single U_2")
+# 
+# mygraph_complete_U_2 <- graph_from_data_frame(prueba_complete_U_2$edges)
+# ggraph(mygraph_complete_U_2, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Complete U_2")
+# 
+# mygraph_average_U_2 <- graph_from_data_frame(prueba_average_U_2$edges)
+# ggraph(mygraph_average_U_2, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Average U_2")
+# 
+# mygraph_centroid_U_2 <- graph_from_data_frame(prueba_centroid_U_2$edges)
+# ggraph(mygraph_centroid_U_2, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Centroid U_2")
+# 
+# mygraph_complete_U6_2  <- graph_from_data_frame(prueba_complete_U6_2$edges)
+# ggraph(mygraph_complete_U6_2, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#   geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Complete U6_2")
+# 
+# mygraph_single_U_3 <- graph_from_data_frame(prueba_single_U_3$edges)
+# ggraph(mygraph_single_U_3, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#           geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#   ylim(-.4, NA) + ggtitle("Single U_3")
+# 
+# U_bank = -1.1*ones(2,2)
+# diag(U_bank) = c(1,1)
+# 
+# hcl_complete_bank_3 = chargedHclust(sample1_bank[, 1:3], Q_bank, U_bank, "centroid")
+# 
+# graph_bank_average_U <- graph_from_data_frame(hcl_complete_bank_3$edges)
+# ggraph(graph_bank_average_U, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#       geom_node_point() + theme_void() + geom_node_text(aes( label=name, filter=leaf) , angle=90 , hjust=1, nudge_y = -0.15) +
+#        ylim(-.4, NA) + ggtitle("Average Bank")
