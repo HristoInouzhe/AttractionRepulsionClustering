@@ -60,7 +60,6 @@ ud_centroid <- function(i, l_d, l_i, l_j, dij) {
 #' ud_ward
 #'
 #' Internal function used in chargedHclust
-#'
 #' @noRd
 ud_ward <- function(i, l_d, l_i, l_j, l_k, dij) {
     ((l_i + l_k[i])/(l_i + l_j + l_k[i])) * l_d[1, i] + ((l_j + l_k[i])/(l_i + l_j + l_k[i])) * l_d[2,
