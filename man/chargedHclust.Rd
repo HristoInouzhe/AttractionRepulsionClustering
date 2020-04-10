@@ -15,7 +15,7 @@ chargedHclust(X, Q, Qf, a = 0, b = 1, tipo = "single", tipoq = "additive")
 
 \item{a}{Intensity of perturbation, only whene tipoq in  c('additive2', multiplicative')}
 
-\item{b}{Velocit of decrease in perturbation, only whene tipoq = 'multiplicative'}
+\item{b}{Velocity of decrease in perturbation, only whene tipoq = 'multiplicative'}
 
 \item{tipo}{The type of hierarchical clustering to be performet. Takes values in c('single', 'average', 'complete', 'mcquitty', 'median', 'centroid', 'ward')}
 

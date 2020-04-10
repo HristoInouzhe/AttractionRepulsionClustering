@@ -2,7 +2,7 @@
 #'
 #' Performs a local correction to the original distance between the unprotected attributes using an interaction matrix
 #'
-#' @param params A list containing the parameters for the local dissimilarity. The entries of the list correspond to u the intensity of the perturbation, v the velocit of decrease in perturbation with respect to charge, w the velocit of decrease in perturbation with respect to unperturbed distance and V the interaction matrix.
+#' @param params A list containing the parameters for the local dissimilarity. The entries of the list correspond to u the intensity of the perturbation, v the velocity of decrease in perturbation with respect to charge, w the velocit of decrease in perturbation with respect to unperturbed distance and V the interaction matrix.
 #' @param distanceMatrix The distance matrix between the unprotected attributes.
 #' @param chargeMatrix The protected attributes as rows.
 #' @param chargedDistance The euclidean distance matrix between the proteted attributes.

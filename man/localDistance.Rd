@@ -7,7 +7,7 @@
 localDistance(params, distanceMatrix, chargeMatrix, chargedDistance)
 }
 \arguments{
-\item{params}{A list containing the parameters for the local dissimilarity. The entries of the list correspond to u the intensity of the perturbation, v the velocit of decrease in perturbation with respect to charge, w the velocit of decrease in perturbation with respect to unperturbed distance and V the interaction matrix.}
+\item{params}{A list containing the parameters for the local dissimilarity. The entries of the list correspond to u the intensity of the perturbation, v the velocity of decrease in perturbation with respect to charge, w the velocit of decrease in perturbation with respect to unperturbed distance and V the interaction matrix.}
 
 \item{distanceMatrix}{The distance matrix between the unprotected attributes.}
 

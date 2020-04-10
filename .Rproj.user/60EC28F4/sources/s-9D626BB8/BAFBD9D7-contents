@@ -81,7 +81,7 @@ ud_charge <- function(i, l_q) {
 #' @param Q Protected attributes as columns
 #' @param Qf Interaction Matrix, only when tipoq = 'additive'.
 #' @param a Intensity of perturbation, only whene tipoq in  c('additive2', multiplicative')
-#' @param b Velocit of decrease in perturbation, only whene tipoq = 'multiplicative'
+#' @param b Velocity of decrease in perturbation, only whene tipoq = 'multiplicative'
 #' @param tipo The type of hierarchical clustering to be performet. Takes values in c('single', 'average', 'complete', 'mcquitty', 'median', 'centroid', 'ward')
 #' @param tipoq The type of dissimilarity to use for attraction-repulsion clustering. Takes values in c('additive', 'additive2', 'multiplicative')
 #' @return Returns a list with elements:
