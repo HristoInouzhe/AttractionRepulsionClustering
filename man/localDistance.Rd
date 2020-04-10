@@ -25,7 +25,7 @@ Performs a local correction to the original distance between the unprotected att
 X <- rbind(rmvnorm(50, mean = c(-1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(-1, -0.5), sigma = diag(0.25, 2)),
            rmvnorm(50, mean = c(1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(1, -0.5), sigma = diag(0.25, 2)))
 Q <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
-params = list(u = 1, v = 1, w = 1, V = matrix(c(1, -1, -1, 1), ncol = 2, byrow = T))
+params = list(u = 1, v = 1, w = 1, V = matrix(c(1, -1, -1, 1), ncol = 2, byrow = TRUE))
 locDistance <- localDistance(params, as.matrix(dist(X)), t(Q), as.matrix(dist(t(Q))))
 }
 \references{

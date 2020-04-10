@@ -80,7 +80,7 @@ ud_charge <- function(i, l_q) {
 #'
 #' @param X Unprotected attribute as rows
 #' @param Q Protected attributes as columns
-#' @param QF Interaction Matrix, only when tipoq = 'additive'.
+#' @param Qf Interaction Matrix, only when tipoq = 'additive'.
 #' @param a Intensity of perturbation, only whene tipoq in  c('additive2', multiplicative')
 #' @param b Velocit of decrease in perturbation, only whene tipoq = 'multiplicative'
 #' @param tipo The type of hierarchical clustering to be performet. Takes values in c('single', 'average', 'complete', 'mcquitty', 'median', 'centroid', 'ward')
@@ -96,13 +96,19 @@ ud_charge <- function(i, l_q) {
 #'            rmvnorm(50, mean = c(1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(1, -0.5), sigma = diag(0.25, 2)))
 #' Q2 <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
 #' qhcl <- chargedHclust(X2, Q2, Qf = matrix(c(0.1, 0, 0, 0.1), ncol = 2), tipo = 'centroid', tipoq = 'additive')
-#' mygraph <- igraph::graph_from_data_frame(qhcl$edges)
-#' ggraph::ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + ggraph::geom_edge_diagonal() +
-#'   ggraph::geom_node_point() + ggplot2::theme_void() + ggraph::geom_node_text(aes(label = name, filter = leaf) , angle = 90 , hjust = 1, nudge_y = -0.15) +
-#'   ggplot2::ylim(-.4, NA) + ggplot2::ggtitle('hierarchical tree')
+#' mygraph <- graph_from_data_frame(qhcl$edges)
+#' ggraph(mygraph, layout = 'dendrogram', circular = FALSE) + geom_edge_diagonal() +
+#'   geom_node_point() + theme_void() + geom_node_text(aes(label = name, filter = leaf) , angle = 90 , hjust = 1, nudge_y = -0.15) +
+#'   ylim(-.4, NA) + ggtitle('hierarchical tree')
 #'
 #' @references E del Barrio, H Inouzhe, JM Loubes. (2019) Attraction-Repulsion clustering with applications to fairness. arXiv:1904.05254
-#' @importFrom mvtnorm rmvnorm
+#' @importFrom igraph graph_from_data_frame
+#' @importFrom ggraph ggraph
+#' @importFrom ggraph geom_edge_diagonal
+#' @importFrom ggraph geom_node_point
+#' @importFrom ggraph geom_node_text
+#' @importFrom ggplot2 theme_void
+#' @importFrom ggplot2 ggtitle
 #' @export
 chargedHclust <- function(X, Q, Qf, a = 0, b = 1, tipo = "single", tipoq = "additive") {
     if (tipoq == "additive") {

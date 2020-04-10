@@ -6,21 +6,37 @@
 #' @param type The thype of charged perturbation that we are applying. Takes values in c("additive1", "additive2", "multiplicative", "local", "unperturbed"). Unperurbed uses teh unprotected attribuets with no perturbation.
 #' @param distances The distance matrix between the unprotected attributes.
 #' @param chargeMatrix The protected attributes as rows.
-#' @param chargedDistance The euclidean distance matrix between the proteted attributes.
+#' @param chargeDistance The euclidean distance matrix between the proteted attributes.
 #' @param Ks A vector with different number of clusters to be used for clustering the data.
 #' @param totalPropMatrix A vector indicating the proportions of the protected attributes in the whole data.
 #'
-#' @return A list with elements:
+#' @return A list with elements. Each of which is itself a list with elemets:
 #' \describe{
-#'
+#'  \item{completeHclust}{A list with results for complete-linkage hierarchical clustering for every number of clusters in Ks where each element has entries:
+#'   \describe{
+#'      \item{distance}{The average euclidean distance (over teh different clusters) between the proportions of the protected attributes in the clusters and the original proportion given by totalPropMatrix.}
+#'      \item{clusterProportions}{The proportions of the protected attributes in each cluster.}
+#'      \item{clusterDistance}{The average euclidean distance for each protected attribute on the different clusters with respect to original proportion given by totalPropMatrix.}
+#'      }
+#'  }
+#'  \item{Kmeans}{A list with results for k-means clustering for every number of clusters in Ks.}
+#'  \item{singleHclust}{A list with results for single-linkage hierarchical clustering for every number of clusters in Ks.}
+#'  \item{averageHclust}{A list with results for average-linkage hierarchical clustering for every number of clusters in Ks}
+#'  \item{clusterCompleteHclust}{A list where each element is the partition for the respective number of clusters in Ks and complete-linkage hierarchical clustering.}
+#'  \item{clusterKmeans}{A list where each element is the partition for the respective number of clusters in Ks and k-means clustering.}
+#'  \item{clusterSingleHclust}{A list where each element is the partition for the respective number of clusters in Ks and single-linkage hierarchical clustering.}
+#'  \item{clusterAverageHclust}{A list where each element is the partition for the respective number of clusters in Ks and average-linkage hierarchical clustering.}
 #' }
 #' @examples
 #' X <- rbind(rmvnorm(50, mean = c(-1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(-1, -0.5), sigma = diag(0.25, 2)),
 #'            rmvnorm(50, mean = c(1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(1, -0.5), sigma = diag(0.25, 2)))
 #' Q <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
 #' params <- c(1,1)
-#' multDistance <- multiplicativeDistance(params, as.matrix(dist(X)), as.matrix(dist(t(Q))))
+#' fairCalc <- fairDistanceCalc(params, "multiplicative", as.matrix(dist(X)), t(Q), as.matrix(dist(t(Q))), 2:4, c(0.5,0.5))
 #' @references E del Barrio, H Inouzhe, JM Loubes. (2019) Attraction-Repulsion clustering with applications to fairness. arXiv:1904.05254
+#' @import MASS
+#' @import stats
+#' @importFrom mvtnorm rmvnorm
 #' @export
 fairDistanceCalc <- function(params, type, distances, chargeMatrix, chargeDistance, Ks, totalPropMatrix) {
     if (type == "additive1") {

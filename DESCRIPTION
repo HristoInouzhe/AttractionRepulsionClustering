@@ -7,5 +7,12 @@ Maintainer: Hristo Inouzhe <hristo.inouzhe@gmail.com>
 Description: Attraction-repulsion clustering for fairness corrections
 License: Artistic-2.0
 Encoding: UTF-8
+Depends:
+  mvtnorm,
+  igraph,
+  ggraph,
+  ggplot2,
+  MASS,
+  stats
 LazyData: true
 RoxygenNote: 7.1.0

@@ -23,7 +23,7 @@ Performs an additive correction to the original distance between the unprotected
 X <- rbind(rmvnorm(50, mean = c(-1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(-1, -0.5), sigma = diag(0.25, 2)),
            rmvnorm(50, mean = c(1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, mean = c(1, -0.5), sigma = diag(0.25, 2)))
 Q <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
-params = list(U = array(0, dim = c(2,2)), v = 1, V = matrix(c(1, -1, -1, 1), ncol = 2, byrow = T))
+params = list(U = array(0, dim = c(2,2)), v = 1, V = matrix(c(1, -1, -1, 1), ncol = 2, byrow = TRUE))
 add1Distance <- additive1Distance(params, as.matrix(dist(X)), t(Q))
 }
 \references{

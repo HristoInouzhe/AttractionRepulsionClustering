@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "2989540407",
     "id" : "1DB54833",
-    "lastKnownWriteTime" : 1586522345,
-    "last_content_update" : 1586522345801,
+    "lastKnownWriteTime" : 1586531282,
+    "last_content_update" : 1586531282593,
     "path" : "P:/R/AttractionRepulsionClustering/R/fairDistanceCalc.R",
     "project_path" : "R/fairDistanceCalc.R",
     "properties" : {
-        "cursorPosition" : "12,32",
-        "scrollLine" : "0"
+        "cursorPosition" : "38,30",
+        "scrollLine" : "19"
     },
     "relative_order" : 4,
     "source_on_save" : false,
