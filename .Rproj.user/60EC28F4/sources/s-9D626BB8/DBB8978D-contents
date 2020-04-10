@@ -18,7 +18,6 @@
 #' Q <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
 #' partition <- kmeans(X, 2)
 #' e2DistProp(partition$cluster, t(Q), c(0.5,0.5))
-#'
 #' @export
 e2DistProp <- function(clusters, chargeMatrix, totalPropMatrix) {
     K = length(table(clusters))

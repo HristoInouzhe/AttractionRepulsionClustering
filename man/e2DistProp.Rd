@@ -30,5 +30,4 @@ X <- rbind(rmvnorm(50, mean = c(-1, 0.5), sigma = diag(0.25, 2)), rmvnorm(50, me
 Q <- cbind(matrix(rep(c(0, 1), 100), nrow = 2), matrix(rep(c(1, 0), 100), nrow = 2))
 partition <- kmeans(X, 2)
 e2DistProp(partition$cluster, t(Q), c(0.5,0.5))
-
 }
